@@ -1,28 +1,47 @@
-import { useState } from "react";
+import React, { useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
+import { CartContext } from "../context/CartContext";
 import { login } from "../auth/authService";
 
 const Login = () => {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
+    const [username, setUsername] = useState("");
+    const [password, setPassword] = useState("");
+    const { login: setAuth } = useContext(AuthContext);
+    const { syncCartWithBackend } = useContext(CartContext); // Lấy hàm từ CartContext
+    const navigate = useNavigate();
 
-  const handleLogin = async () => {
-    const result = await login(username, password);
-    setMessage(result.message);
-    if (result.success) {
-      window.location.href = "/";
-    }
-  };
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const { token, cartItems } = await login(username, password);
+            setAuth(token, localStorage.getItem("userName")); // Cập nhật AuthContext
+            await syncCartWithBackend(); // Đồng bộ giỏ hàng từ back-end
+            navigate("/"); // Chuyển hướng
+        } catch (error) {
+            alert("Đăng nhập thất bại!");
+        }
+    };
 
-  return (
-    <div>
-      <h2>Đăng nhập</h2>
-      <input type="text" placeholder="Tên đăng nhập" onChange={(e) => setUsername(e.target.value)} />
-      <input type="password" placeholder="Mật khẩu" onChange={(e) => setPassword(e.target.value)} />
-      <button onClick={handleLogin}>Đăng nhập</button>
-      {message && <p>{message}</p>}
-    </div>
-  );
+    
+
+    return (
+        <form onSubmit={handleSubmit}>
+            <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Username"
+            />
+            <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+            />
+            <button type="submit">Đăng nhập</button>
+        </form>
+    );
 };
 
 export default Login;
