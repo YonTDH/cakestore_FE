@@ -7,12 +7,17 @@ const CartPage = () => {
     const { cart, removeFromCart, increaseQuantity, decreaseQuantity } = useContext(CartContext);
     const navigate = useNavigate();
 
+    const formatPrice = (price) => {
+        return price.toLocaleString("vi-VN");
+    };
+
     const calculateTotal = () => {
-        return cart.reduce((total, item) => {
+        const total = cart.reduce((total, item) => {
             const price = item.price || 0;
             const quantity = item.quantity || 1;
             return total + price * quantity;
-        }, 0).toFixed(2);
+        }, 0);
+        return formatPrice(total);
     };
 
     const handleCheckout = () => {
@@ -25,7 +30,6 @@ const CartPage = () => {
 
     return (
         <div className="cart-page">
-            <h1>Your Shopping Cart 🛍️</h1>
             {cart.length === 0 ? (
                 <p>Giỏ hàng của bạn đang trống.</p>
             ) : (
@@ -33,6 +37,7 @@ const CartPage = () => {
                     <table className="cart-table">
                         <thead>
                             <tr>
+                                <th>Hình ảnh</th>
                                 <th>Tên sản phẩm</th>
                                 <th>Giá</th>
                                 <th>Số lượng</th>
@@ -43,8 +48,15 @@ const CartPage = () => {
                         <tbody>
                             {cart.map((item) => (
                                 <tr key={item.id}>
+                                    <td>
+                                        <img
+                                            src={item.image || "https://placehold.co/80x80"}
+                                            alt={item.name || "Sản phẩm #" + item.productId}
+                                            className="cart-item-image"
+                                        />
+                                    </td>
                                     <td>{item.name || "Sản phẩm #" + item.productId}</td>
-                                    <td>{(item.price || 0).toFixed(2)} VND</td>
+                                    <td>{formatPrice(item.price || 0)} VND</td>
                                     <td>
                                         <div className="quantity-control">
                                             <button
@@ -57,7 +69,7 @@ const CartPage = () => {
                                             >+</button>
                                         </div>
                                     </td>
-                                    <td>{((item.price || 0) * (item.quantity || 1)).toFixed(2)} VND</td>
+                                    <td>{formatPrice((item.price || 0) * (item.quantity || 1))} VND</td>
                                     <td>
                                         <button
                                             onClick={() => removeFromCart(item.cartId, item.productId)}
@@ -69,7 +81,7 @@ const CartPage = () => {
                         </tbody>
                     </table>
                     <div className="cart-total">
-                        <h3>Tổng giá: {calculateTotal()} VND</h3>
+                        <h3>Tổng giá: {calculateTotal()} đ</h3>
                         <button className="checkout-btn" onClick={handleCheckout}>Thanh Toán</button>
                     </div>
                 </>
