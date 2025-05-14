@@ -14,8 +14,9 @@ const districts = [
 ];
 
 const Checkout = () => {
-    const { cart } = useContext(CartContext); // Xóa syncCartWithBackend
+    const { cart, clearCart } = useContext(CartContext);
     const navigate = useNavigate();
+    const SHIPPING_FEE = 40000; // Phí vận chuyển cố định
 
     const [formData, setFormData] = useState({
         fullName: "",
@@ -33,12 +34,16 @@ const Checkout = () => {
         return price.toLocaleString("vi-VN");
     };
 
-    const calculateTotal = () => {
+    const calculateSubtotal = () => {
         return cart.reduce((total, item) => {
             const price = item.price || 0;
             const quantity = item.quantity || 1;
             return total + price * quantity;
         }, 0);
+    };
+
+    const calculateTotal = () => {
+        return calculateSubtotal() + SHIPPING_FEE;
     };
 
     const validateForm = () => {
@@ -82,27 +87,33 @@ const Checkout = () => {
                 district: formData.district,
                 address: formData.address,
                 note: formData.note,
-                paymentMethod: formData.paymentMethod
+                paymentMethod: formData.paymentMethod,
+                shippingFee: SHIPPING_FEE,
+                totalPrice: calculateTotal()
             };
             console.log("Sending order request:", orderRequest);
 
             const response = await axiosClient.post("/orders/create", orderRequest);
+            console.log("API response:", response.data);
+
+            // Clear cart after successful order creation
+            await clearCart();
+
+            const orderId = response.data.orderId || "Không xác định";
             const endTime = performance.now();
             console.log(`Order created successfully in ${(endTime - startTime) / 1000} seconds:`, response.data);
-
-            // Không gọi syncCartWithBackend vì clearCart đã chạy trong OrderService
 
             await Swal.fire({
                 icon: "success",
                 title: "Thành công!",
-                text: `Đơn hàng đã được tạo thành công! Mã đơn hàng: ${response.data.id}`,
+                text: `Đơn hàng đã được tạo thành công! Mã đơn hàng: ${orderId}`,
                 confirmButtonText: "Xem đơn hàng",
                 showCancelButton: true,
                 cancelButtonText: "Về trang chủ"
             }).then((result) => {
-                if (result.isConfirmed) {
-                    console.log("Navigating to order:", response.data.id);
-                    navigate(`/orders/${response.data.id}`);
+                if (result.isConfirmed && response.data.orderId) {
+                    console.log("Navigating to order:", response.data.orderId);
+                    navigate(`/order/${response.data.orderId}`);
                 } else {
                     console.log("Navigating to home");
                     navigate("/");
@@ -235,12 +246,12 @@ const Checkout = () => {
                     
                     <div className="order-total">
                         <span>Tạm tính:</span>
-                        <span>{formatPrice(calculateTotal())} đ</span>
+                        <span>{formatPrice(calculateSubtotal())} đ</span>
                     </div>
                     
                     <div className="order-total">
                         <span>Phí vận chuyển:</span>
-                        <span>0 đ</span>
+                        <span>{formatPrice(SHIPPING_FEE)} đ</span>
                     </div>
                     
                     <div className="order-total">
